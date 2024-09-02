@@ -1,15 +1,21 @@
 <template>
-<router-view></router-view>
   <div class="main-page">
-    <h1>Join a Room</h1>
+    <h1>Select Game Mode</h1>
+    <!-- Game Mode Selection -->
+    <div class="game-mode-selection">
+      <button @click="createRoom('Algebra')">Algebra</button>
+      <button @click="createRoom('Lambda')">Lambda Functions</button>
+      <button @click="createRoom('Strings')">String Manipulation</button>
+      <!-- New button for Enhanced Game -->
+      <button @click="createRoom('Enhanced')">Enhanced Game</button>
+    </div>
 
+    <!-- Room List -->
     <div v-if="rooms.length > 0" class="rooms-list">
       <ul>
         <li v-for="room in rooms" :key="room.gameId" class="room-item">
-          <router-link :to="`/game/${room.gameId}`">
-            Room ID: {{ room.gameId }} ({{ room.playerCount }} Player{{
-              room.playerCount > 1 ? "s" : ""
-            }})
+          <router-link :to="getRoomLink(room)">
+            Room ID: {{ room.gameId }} ({{ room.playerCount }} Player{{ room.playerCount > 1 ? "s" : "" }})
           </router-link>
         </li>
       </ul>
@@ -18,10 +24,11 @@
       <p>No rooms available. Create one below!</p>
     </div>
 
+    <!-- Create Room Form -->
     <div class="create-room">
       <h2>Create a New Room</h2>
-      <form @submit.prevent="createRoom">
-        <label for="name">Your Name:</label>
+      <form @submit.prevent="createRoom(selectedMode)">
+        <label for="name">Room Name:</label>
         <input type="text" v-model="playerName" id="name" required />
 
         <button type="submit">Create Room</button>
@@ -31,42 +38,59 @@
 </template>
 
 <script lang="ts">
-import { defineComponent, ref, onMounted } from "vue";
-import { useRouter } from "vue-router";
+import { defineComponent, ref } from 'vue';
+import { useRouter } from 'vue-router';
 
 export default defineComponent({
-  name: "MainPage",
+  name: 'MainPage',
   setup() {
-    const rooms = ref([]);
-    const playerName = ref("");
+    const rooms = ref([]); // List of rooms
+    const playerName = ref(''); // Player's name
+    const selectedMode = ref(''); // Track selected mode
     const router = useRouter();
 
-    const fetchRooms = async () => {
-      const response = await fetch("/api/games");
-      if (response.ok) {
-        rooms.value = await response.json();
+    // Create a new game room
+    const createRoom = (mode: string) => {
+      selectedMode.value = mode;
+      const gameId = generateGameId();
+      const newRoom = {
+        gameId,
+        mode: mode,
+        playerCount: 1,
+        players: [{ name: playerName.value }],
+      };
+      rooms.value.push(newRoom);
+
+      if (mode === 'Algebra') {
+        router.push(`/game/${gameId}?mode=${mode}`);
+      } else if (mode === 'Lambda') {
+        router.push(`/lambda-game/${gameId}?mode=${mode}`);
+      } else if (mode === 'Strings') {
+        router.push(`/string-game/${gameId}?mode=${mode}`);
+      } else if (mode === 'Enhanced') {
+        router.push(`/enhanced-game/${gameId}?mode=${mode}`);
       }
     };
 
-    const createRoom = async () => {
-      const response = await fetch("/api/game/create", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ playerName: playerName.value }),
-      });
-      if (response.ok) {
-        const { gameId } = await response.json();
-        router.push(`/game/${gameId}`);
+    // Generate a random game ID
+    const generateGameId = () => {
+      return Math.random().toString(36).substring(2, 9);
+    };
+
+    // Get the link to a room based on its mode
+    const getRoomLink = (room) => {
+      if (room.mode === 'Algebra') {
+        return `/game/${room.gameId}?mode=${room.mode}`;
+      } else if (room.mode === 'Lambda') {
+        return `/lambda-game/${room.gameId}?mode=${room.mode}`;
+      } else if (room.mode === 'Strings') {
+        return `/string-game/${room.gameId}?mode=${room.mode}`;
+      } else if (room.mode === 'Enhanced') {
+        return `/enhanced-game/${room.gameId}?mode=${room.mode}`;
       }
     };
 
-    onMounted(() => {
-      fetchRooms();
-    });
-
-    return { rooms, playerName, createRoom };
+    return { rooms, playerName, createRoom, getRoomLink, selectedMode };
   },
 });
 </script>
@@ -82,6 +106,26 @@ export default defineComponent({
 h1 {
   text-align: center;
   margin-bottom: 20px;
+}
+
+.game-mode-selection {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+button {
+  padding: 10px 20px;
+  margin-right: 10px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 16px;
+}
+
+button:hover {
+  background-color: #0056b3;
 }
 
 .rooms-list {
